@@ -3,7 +3,7 @@
  * Plugin Name: m2m Quotes
  * Description: A plugin to display quotes with likes, dislikes, and sharing options.
  * Version: 1.0
- * Author: Your Name
+ * Author: Paul Nyabaro
  */
 
 if (!defined('ABSPATH')) {
