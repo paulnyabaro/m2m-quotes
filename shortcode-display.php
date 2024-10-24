@@ -18,24 +18,28 @@ function m2m_display_quote_shortcode() {
             </blockquote>
 
             <div class="m2m-vote-buttons">
-                <button data-quote-id="<?php echo $quote->id; ?>" class="m2m-like-btn">👍 Like (<?php echo $quote->likes; ?>)</button>
-                <button data-quote-id="<?php echo $quote->id; ?>" class="m2m-dislike-btn">👎 Dislike (<?php echo $quote->dislikes; ?>)</button>
+                <?php if (get_option('m2m_show_likes_dislikes', 1)) : ?>
+                    <button data-quote-id="<?php echo $quote->id; ?>" class="m2m-like-btn">👍 Like (<?php echo $quote->likes; ?>)</button>
+                    <button data-quote-id="<?php echo $quote->id; ?>" class="m2m-dislike-btn">👎 Dislike (<?php echo $quote->dislikes; ?>)</button>
+                <?php endif; ?>
             </div>
 
             <div class="m2m-custom-buttons">
-                <!-- Replace with admin-specified buttons -->
-                <a href="#"><img src="icon1.png" alt="Link 1"></a>
-                <a href="#"><img src="icon2.png" alt="Link 2"></a>
-                <a href="#"><img src="icon3.png" alt="Link 3"></a>
-                <a href="#"><img src="icon4.png" alt="Link 4"></a>
+                <a href="<?php echo esc_url(get_option('m2m_custom_url_1', '#')); ?>"><img src="<?php echo plugin_dir_url(__FILE__) . 'assets/icon1.png'; ?>" alt="Button 1"></a>
+                <a href="<?php echo esc_url(get_option('m2m_custom_url_2', '#')); ?>"><img src="<?php echo plugin_dir_url(__FILE__) . 'assets/icon2.png'; ?>" alt="Button 2"></a>
+                <a href="<?php echo esc_url(get_option('m2m_custom_url_3', '#')); ?>"><img src="<?php echo plugin_dir_url(__FILE__) . 'assets/icon3.png'; ?>" alt="Button 3"></a>
+                <a href="<?php echo esc_url(get_option('m2m_custom_url_4', '#')); ?>"><img src="<?php echo plugin_dir_url(__FILE__) . 'assets/icon4.png'; ?>" alt="Button 4"></a>
             </div>
 
-            <div class="m2m-share-buttons">
+            <?php if (get_option('m2m_show_share_buttons', 1)) : ?>
+                <div class="m2m-share-buttons">
                 <!-- Social share buttons -->
-                <a href="https://twitter.com/intent/tweet?text=<?php echo urlencode($quote->quote_text); ?>">Share on Twitter</a>
-                <a href="https://www.facebook.com/sharer.php?u=<?php echo urlencode(get_permalink()); ?>">Share on Facebook</a>
-                <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?php echo urlencode(get_permalink()); ?>">Share on LinkedIn</a>
-            </div>
+                    <a href="https://twitter.com/intent/tweet?text=<?php echo urlencode($quote->quote_text); ?>">Share on Twitter</a>
+                    <a href="https://www.facebook.com/sharer.php?u=<?php echo urlencode(get_permalink()); ?>">Share on Facebook</a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?php echo urlencode(get_permalink()); ?>">Share on LinkedIn</a>
+                </div>
+            <?php endif; ?>
+
         </div>
         <?php
         return ob_get_clean();
