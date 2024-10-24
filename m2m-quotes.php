@@ -2,7 +2,7 @@
 /*
 Plugin Name: M2M Quotes
 Description: Display quotes that rotate every 24 hours with voting and sharing capabilities.
-Version: 1.0
+Version: 1.1
 Author: Paul Nyabaro
 */
 
