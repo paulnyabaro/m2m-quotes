@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: M2M Quotes
+Plugin Name: M2M Quotes version
 Description: Display quotes that rotate every 24 hours with voting and sharing capabilities.
 Version: 1.1
 Author: Paul Nyabaro
