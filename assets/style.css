@@ -1,0 +1,65 @@
+.m2m-quote-container {
+    border: 2px solid #ddd;
+    padding: 20px;
+    margin-bottom: 20px;
+    background-color: #f9f9f9;
+}
+
+blockquote {
+    font-size: 1.5em;
+    font-style: italic;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+blockquote footer {
+    font-size: 1em;
+    font-style: normal;
+    text-align: right;
+    color: #777;
+}
+
+.m2m-vote-buttons {
+    margin-top: 10px;
+}
+
+.m2m-vote-buttons button {
+    background-color: #0073aa;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin-right: 10px;
+    cursor: pointer;
+    font-size: 1em;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+.m2m-vote-buttons button:hover {
+    background-color: #005177;
+}
+
+.m2m-custom-buttons {
+    margin-top: 20px;
+}
+
+.m2m-custom-buttons a img {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+}
+
+.m2m-share-buttons {
+    margin-top: 20px;
+}
+
+.m2m-share-buttons a {
+    text-decoration: none;
+    color: #0073aa;
+    margin-right: 10px;
+    font-size: 1em;
+}
+
+.m2m-share-buttons a:hover {
+    color: #005177;
+}
