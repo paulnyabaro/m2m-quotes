@@ -129,10 +129,92 @@ function m2m_admin_menu() {
 add_action('admin_menu', 'm2m_admin_menu');
 
 function m2m_quotes_settings_page() {
+    // Check if form is submitted for settings
+    if (isset($_POST['m2m_quotes_save_settings'])) {
+        check_admin_referer('m2m_quotes_save_settings_verify');
+
+        // Save options (you can add more settings as required)
+        $auto_switch_interval = intval($_POST['m2m_auto_switch_interval']);
+        update_option('m2m_auto_switch_interval', $auto_switch_interval);
+
+        echo '<div class="updated"><p>' . __('Settings saved successfully!', 'm2m-quotes') . '</p></div>';
+    }
+
+    // Get the current setting for the automatic switch interval
+    $auto_switch_interval = get_option('m2m_auto_switch_interval', 24); // Default is 24 hours
+
+    // Query all quotes for performance
+    $args = array(
+        'post_type' => 'm2m_quotes',
+        'posts_per_page' => -1
+    );
+    $quotes = new WP_Query($args);
+    
     ?>
     <div class="wrap">
         <h1><?php _e('m2m Quotes Settings', 'm2m-quotes'); ?></h1>
-        <p><?php _e('Manage the settings for your quotes plugin here.', 'm2m-quotes'); ?></p>
+        <h2><?php _e('Quotes Performance', 'm2m-quotes'); ?></h2>
+        <table class="widefat">
+            <thead>
+                <tr>
+                    <th><?php _e('Quote', 'm2m-quotes'); ?></th>
+                    <th><?php _e('Author', 'm2m-quotes'); ?></th>
+                    <th><?php _e('Likes', 'm2m-quotes'); ?></th>
+                    <th><?php _e('Dislikes', 'm2m-quotes'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php
+            if ($quotes->have_posts()) {
+                while ($quotes->have_posts()) {
+                    $quotes->the_post();
+                    $likes = get_post_meta(get_the_ID(), 'likes', true) ?: 0;
+                    $dislikes = get_post_meta(get_the_ID(), 'dislikes', true) ?: 0;
+                    $author = get_post_meta(get_the_ID(), 'author', true) ?: __('Unknown', 'm2m-quotes');
+                    ?>
+                    <tr>
+                        <td><?php the_content(); ?></td>
+                        <td><?php echo esc_html($author); ?></td>
+                        <td><?php echo esc_html($likes); ?></td>
+                        <td><?php echo esc_html($dislikes); ?></td>
+                    </tr>
+                    <?php
+                }
+                wp_reset_postdata();
+            } else {
+                ?>
+                <tr>
+                    <td colspan="4"><?php _e('No quotes found.', 'm2m-quotes'); ?></td>
+                </tr>
+                <?php
+            }
+            ?>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2><?php _e('Admin Options', 'm2m-quotes'); ?></h2>
+        <form method="post" action="">
+            <?php wp_nonce_field('m2m_quotes_save_settings_verify'); ?>
+
+            <table class="form-table">
+                <tr valign="top">
+                    <th scope="row"><?php _e('Automatic Quote Switch Interval (in hours)', 'm2m-quotes'); ?></th>
+                    <td>
+                        <input type="number" name="m2m_auto_switch_interval" value="<?php echo esc_attr($auto_switch_interval); ?>" min="1" class="small-text" />
+                        <p class="description"><?php _e('Set the interval (in hours) for how often quotes should switch automatically.', 'm2m-quotes'); ?></p>
+                    </td>
+                </tr>
+
+                <!-- Add more admin options here if needed -->
+
+            </table>
+
+            <p class="submit">
+                <input type="submit" name="m2m_quotes_save_settings" class="button-primary" value="<?php _e('Save Changes', 'm2m-quotes'); ?>" />
+            </p>
+        </form>
     </div>
     <?php
 }
