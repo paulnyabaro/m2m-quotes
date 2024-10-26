@@ -1,88 +1,153 @@
 <?php
-/*
-Plugin Name: M2M Quotes version
-Description: Display quotes that rotate every 24 hours with voting and sharing capabilities.
-Version: 1.2
-Author: Paul Nyabaro
-*/
+/**
+ * Plugin Name: M2M Quotes
+ * Description: Display motivational quotes that change every 24 hours, with likes, dislikes, and sharing functionality. Admins can add quotes and track analytics.
+ * Version: 1.0
+ * Author: Your Name
+ */
 
-if (!defined('ABSPATH')) exit;
-
-// Include admin dashboard functionality
-include(plugin_dir_path(__FILE__) . 'admin-dashboard.php');
-include(plugin_dir_path(__FILE__) . 'shortcode-display.php');
-
-// Create custom database table for quotes
-register_activation_hook(__FILE__, 'm2m_quotes_create_table');
-function m2m_quotes_create_table() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'm2m_quotes';
-    $charset_collate = $wpdb->get_charset_collate();
-
-    $sql = "CREATE TABLE $table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        quote_text text NOT NULL,
-        author varchar(255) NOT NULL,
-        role varchar(255) DEFAULT '',
-        likes int(11) DEFAULT 0,
-        dislikes int(11) DEFAULT 0,
-        created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-        PRIMARY KEY  (id)
-    ) $charset_collate;";
-
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
-}
-
-// Enqueue assets (styles, scripts)
-add_action('wp_enqueue_scripts', 'm2m_quotes_enqueue_assets');
-function m2m_quotes_enqueue_assets() {
-    wp_enqueue_style('m2m-quotes-style', plugin_dir_url(__FILE__) . 'assets/style.css');
-    wp_enqueue_script('m2m-quotes-script', plugin_dir_url(__FILE__) . 'assets/script.js', array('jquery'), null, true);
-    wp_localize_script('m2m-quotes-script', 'm2m_quotes_ajax', array(
-        'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce'    => wp_create_nonce('m2m_quotes_nonce')
+// Create the custom post type for quotes
+function m2m_quotes_custom_post_type() {
+    register_post_type('m2m_quotes', array(
+        'labels' => array(
+            'name' => __('Quotes'),
+            'singular_name' => __('Quote')
+        ),
+        'public' => true,
+        'show_in_menu' => true,
+        'menu_icon' => 'dashicons-format-quote',
+        'supports' => array('title', 'editor', 'custom-fields'),
     ));
 }
+add_action('init', 'm2m_quotes_custom_post_type');
 
-// AJAX handlers for like and dislike buttons
-add_action('wp_ajax_m2m_quote_vote', 'm2m_quote_vote');
-add_action('wp_ajax_nopriv_m2m_quote_vote', 'm2m_quote_vote');
-function m2m_quote_vote() {
-    check_ajax_referer('m2m_quotes_nonce', 'nonce');
-    global $wpdb;
+// Add meta boxes for author and role
+function m2m_quotes_add_meta_boxes() {
+    add_meta_box('m2m_quotes_meta', 'Quote Details', 'm2m_quotes_meta_callback', 'm2m_quotes', 'normal', 'high');
+}
+add_action('add_meta_boxes', 'm2m_quotes_add_meta_boxes');
 
-    $quote_id = intval($_POST['quote_id']);
-    $action = sanitize_text_field($_POST['action_type']);
-
-    $table_name = $wpdb->prefix . 'm2m_quotes';
-
-    if ($action == 'like') {
-        $wpdb->query("UPDATE $table_name SET likes = likes + 1 WHERE id = $quote_id");
-    } else if ($action == 'dislike') {
-        $wpdb->query("UPDATE $table_name SET dislikes = dislikes + 1 WHERE id = $quote_id");
-    }
-
-    $result = $wpdb->get_row("SELECT likes, dislikes FROM $table_name WHERE id = $quote_id");
-    wp_send_json_success($result);
+function m2m_quotes_meta_callback($post) {
+    $author = get_post_meta($post->ID, '_m2m_quote_author', true);
+    $role = get_post_meta($post->ID, '_m2m_quote_role', true);
+    echo '<p><label for="m2m_quote_author">Author:</label> <input type="text" id="m2m_quote_author" name="m2m_quote_author" value="' . esc_attr($author) . '" /></p>';
+    echo '<p><label for="m2m_quote_role">Role:</label> <input type="text" id="m2m_quote_role" name="m2m_quote_role" value="' . esc_attr($role) . '" /></p>';
 }
 
-// Cron job to display new quote every 24 hours
-register_activation_hook(__FILE__, 'm2m_quotes_schedule_cron');
-function m2m_quotes_schedule_cron() {
-    if (!wp_next_scheduled('m2m_quotes_daily_event')) {
-        wp_schedule_event(time(), 'daily', 'm2m_quotes_daily_event');
+// Save meta box data
+function m2m_quotes_save_meta_box_data($post_id) {
+    if (isset($_POST['m2m_quote_author'])) {
+        update_post_meta($post_id, '_m2m_quote_author', sanitize_text_field($_POST['m2m_quote_author']));
+    }
+    if (isset($_POST['m2m_quote_role'])) {
+        update_post_meta($post_id, '_m2m_quote_role', sanitize_text_field($_POST['m2m_quote_role']));
     }
 }
+add_action('save_post', 'm2m_quotes_save_meta_box_data');
 
-add_action('m2m_quotes_daily_event', 'm2m_quotes_rotate_quote');
-function m2m_quotes_rotate_quote() {
-    // Logic for rotating the quote daily
-    // You can use get_option and update_option to track the current displayed quote
+// Display quotes using shortcode
+function m2m_quotes_shortcode() {
+    $args = array(
+        'post_type' => 'm2m_quotes',
+        'posts_per_page' => 1,
+        'orderby' => 'rand', // Change this logic for 24-hour switching
+    );
+    $quote_query = new WP_Query($args);
+
+    if ($quote_query->have_posts()) {
+        while ($quote_query->have_posts()) {
+            $quote_query->the_post();
+            $quote = get_the_content();
+            $author = get_post_meta(get_the_ID(), '_m2m_quote_author', true);
+            $role = get_post_meta(get_the_ID(), '_m2m_quote_role', true);
+            $likes = get_post_meta(get_the_ID(), '_m2m_quote_likes', true) ?: 0;
+            $dislikes = get_post_meta(get_the_ID(), '_m2m_quote_dislikes', true) ?: 0;
+
+            // Display quote
+            echo '<div class="m2m-quote">';
+            echo '<p>' . esc_html($quote) . '</p>';
+            echo '<p><strong>- ' . esc_html($author) . ', ' . esc_html($role) . '</strong></p>';
+            
+            // Display like/dislike buttons
+            echo '<div class="m2m-votes">';
+            echo '<button class="m2m-like-btn" data-quote-id="' . get_the_ID() . '">👍 (' . esc_html($likes) . ')</button>';
+            echo '<button class="m2m-dislike-btn" data-quote-id="' . get_the_ID() . '">👎 (' . esc_html($dislikes) . ')</button>';
+            echo '</div>';
+
+            // Share buttons
+            echo '<div class="m2m-share-buttons">';
+            echo '<a href="https://twitter.com/share?text=' . urlencode($quote) . '" target="_blank">Twitter</a>';
+            echo '<a href="https://www.facebook.com/sharer/sharer.php?u=' . urlencode(get_permalink()) . '" target="_blank">Facebook</a>';
+            echo '<a href="https://www.linkedin.com/shareArticle?mini=true&url=' . urlencode(get_permalink()) . '" target="_blank">LinkedIn</a>';
+            echo '<button class="m2m-copy-link" data-link="' . get_permalink() . '">Copy Link</button>';
+            echo '</div>';
+
+            echo '</div>';
+        }
+        wp_reset_postdata();
+    } else {
+        echo '<p>No quote available at the moment.</p>';
+    }
+}
+add_shortcode('m2m_quotes', 'm2m_quotes_shortcode');
+
+// Enqueue frontend scripts
+function m2m_quotes_enqueue_scripts() {
+    wp_enqueue_script('m2m-quotes-js', plugins_url('/js/m2m-quotes.js', __FILE__), array('jquery'), null, true);
+}
+add_action('wp_enqueue_scripts', 'm2m_quotes_enqueue_scripts');
+
+// AJAX handlers for like/dislike
+function m2m_quotes_like_dislike() {
+    if (isset($_POST['quote_id'])) {
+        $quote_id = intval($_POST['quote_id']);
+        $vote_type = sanitize_text_field($_POST['vote_type']);
+
+        if ($vote_type === 'like') {
+            $current_likes = get_post_meta($quote_id, '_m2m_quote_likes', true) ?: 0;
+            update_post_meta($quote_id, '_m2m_quote_likes', $current_likes + 1);
+        } elseif ($vote_type === 'dislike') {
+            $current_dislikes = get_post_meta($quote_id, '_m2m_quote_dislikes', true) ?: 0;
+            update_post_meta($quote_id, '_m2m_quote_dislikes', $current_dislikes + 1);
+        }
+        wp_send_json_success();
+    }
+    wp_send_json_error();
+}
+add_action('wp_ajax_m2m_like_dislike', 'm2m_quotes_like_dislike');
+add_action('wp_ajax_nopriv_m2m_like_dislike', 'm2m_quotes_like_dislike');
+
+// Admin settings page
+function m2m_quotes_admin_menu() {
+    add_menu_page('M2M Quotes Settings', 'M2M Quotes', 'manage_options', 'm2m-quotes', 'm2m_quotes_settings_page', 'dashicons-admin-generic', 20);
+}
+add_action('admin_menu', 'm2m_quotes_admin_menu');
+
+function m2m_quotes_settings_page() {
+    ?>
+    <div class="wrap">
+        <h1>M2M Quotes Settings</h1>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields('m2m_quotes_settings_group');
+            do_settings_sections('m2m-quotes-settings');
+            submit_button();
+            ?>
+        </form>
+    </div>
+    <?php
 }
 
-register_deactivation_hook(__FILE__, 'm2m_quotes_remove_cron');
-function m2m_quotes_remove_cron() {
-    wp_clear_scheduled_hook('m2m_quotes_daily_event');
-}
+// Register settings
+function m2m_quotes_register_settings() {
+    register_setting('m2m_quotes_settings_group', 'm2m_quotes_custom_button_1');
+    add_settings_section('m2m_quotes_custom_buttons', 'Custom Buttons', null, 'm2m-quotes-settings');
 
+    add_settings_field('m2m_quotes_custom_button_1', 'Button 1 URL', 'm2m_quotes_custom_button_callback', 'm2m-quotes-settings', 'm2m_quotes_custom_buttons', array('label_for' => 'm2m_quotes_custom_button_1'));
+}
+add_action('admin_init', 'm2m_quotes_register_settings');
+
+function m2m_quotes_custom_button_callback($args) {
+    $value = get_option($args['label_for']);
+    echo '<input type="text" id="' . $args['label_for'] . '" name="' . $args['label_for'] . '" value="' . esc_attr($value) . '" />';
+}
