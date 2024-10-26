@@ -2,8 +2,8 @@
 /**
  * Plugin Name: M2M Quotes
  * Description: Display motivational quotes that change every 24 hours, with likes, dislikes, and sharing functionality. Admins can add quotes and track analytics.
- * Version: 1.0
- * Author: Your Name
+ * Version: 1.3
+ * Author: Mind To Matter
  */
 
 // Create the custom post type for quotes
