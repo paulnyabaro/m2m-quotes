@@ -97,6 +97,13 @@ function m2m_quotes_enqueue_scripts() {
 }
 add_action('wp_enqueue_scripts', 'm2m_quotes_enqueue_scripts');
 
+// Enqueue frontend styles
+function m2m_quotes_enqueue_styles() {
+    wp_enqueue_style('m2m-quotes-css', plugins_url('/css/m2m-quotes.css', __FILE__));
+}
+
+add_action('wp_enqueue_scripts', 'm2m_quotes_enqueue_styles');
+
 // AJAX handlers for like/dislike
 function m2m_quotes_like_dislike() {
     if (isset($_POST['quote_id'])) {
